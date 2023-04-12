@@ -1,13 +1,24 @@
 import pickle
+import numpy as np
 
 from tensorflow.keras.callbacks import TensorBoard
 
-from data_processing import load_data
 from models import make_model, prepare_model
+
+
+def load_data():
+    with open('data/Stanford40.pickle', 'rb') as f:
+        data = pickle.load(f)
+    X_train = np.array(data['train_files'])
+    y_train = np.array(data['train_labels'])
+    X_val = np.array(data['val_files'])
+    y_val = np.array(data['val_labels'])
+    X_test = np.array(data['test_files'])
+    y_test = np.array(data['test_labels'])
+    return X_train, y_train, X_val, y_val, X_test, y_test
 
 if __name__ == "__main__":
     # Load the data from Stanford40.pickle
-    load_data = pickle.load(open("Stanford40.pickle", "rb"))
     X_train, y_train, X_val, y_val, X_test, y_test = load_data()
     print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
 

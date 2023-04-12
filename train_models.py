@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import opencv as cv2
 
 from tensorflow.keras.callbacks import TensorBoard
 
@@ -17,11 +18,22 @@ def load_data():
     y_test = np.array(data['test_labels'])
     return X_train, y_train, X_val, y_val, X_test, y_test
 
+def load_images():
+    img = cv2.imread(f"./Stanford40/JPEGImages/{train_files[IMAGE_N]}")
+    print(f"An image with the label: {train_labels[IMAGE_N]}")
+
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
+    plt.imshow(img)  # Show image with matplotlib
+    plt.show()
+
+
 if __name__ == "__main__":
     # Load the data from Stanford40.pickle
+
+
     X_train, y_train, X_val, y_val, X_test, y_test = load_data()
     print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
-
+    
     kernel_size = 3
     pool_size = 2
     pooling_type = "max"

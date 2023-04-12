@@ -56,7 +56,7 @@ def make_model(kernel_size: int = 3, pool_size: int = 2, pooling_type: str = "av
 
 def prepare_model(model, learning_rate: float = 0.01, batch_size: int = 64, total_size: int = 48_000):
     # Decrease the learning rate at a 1/2 of the value every 5 epochs
-    learning_rate_schedule = CyclicLRSchedule(learning_rate, batch_size, total_size)
+    learning_rate_schedule = DecayingLRSchedule(learning_rate, batch_size, total_size)
     opt = Adam(learning_rate=learning_rate_schedule)
 
     model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy"])
@@ -79,15 +79,15 @@ class CyclicLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
     def __call__(self, step):
         # Warmup
-        if step < self.warmup_epochs * self.total_size // self.batch_size:
-            return self.learning_rate * (step + 1) / (self.warmup_epochs * self.total_size // self.batch_size)
+        if step < self.warmup_epochs * tf.cast(tf.math.floor(self.total_size / self.batch_size), dtype=tf.int64):
+            return float(tf.math.floor(self.learning_rate * (step + 1) / (tf.cast(tf.math.floor(self.warmup_epochs * self.total_size / self.batch_size), dtype=tf.float32).astype(tf.float32))))
 
         # Decay
-        if step % (self.total_size // self.batch_size * self.decay_steps) == 0:
+        if step % tf.cast(tf.math.floor(self.total_size / self.batch_size) * self.decay_steps, dtype=tf.int64) == 0:
             self.learning_rate *= self.decay_rate
 
         # Cyclic
-        return self.learning_rate * (1 + tf.math.cos(step * 3.14 / (self.total_size // self.batch_size))) / 2
+        return float(tf.math.floor(self.learning_rate * (step + 1) / tf.cast(tf.math.floor(self.warmup_epochs * self.total_size / self.batch_size), dtype=tf.float32).astype(tf.float32)))
 
     def get_config(self):
         return {

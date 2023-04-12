@@ -1,11 +1,12 @@
-import pickle
-import cv2
-from sklearn.model_selection import train_test_split
-from collections import Counter
-import requests
-import zipfile
 import io
+import pickle
+import zipfile
+from collections import Counter
+
+import cv2
 import matplotlib.pyplot as plt
+import requests
+from sklearn.model_selection import train_test_split
 
 DOWNLOAD = False  # Set to True to download the data
 IMAGE_N = 234  # change this to a number between [0, 1200] and you can see a different training image, None for no image
@@ -53,11 +54,11 @@ val_labels = ["_".join(name.split("_")[:-1]) for name in val_files]
 print(f"Train files ({len(train_files)})")
 print(f"Train Distribution:{list(Counter(sorted(train_labels)).items())}\n")
 
-print(f"Test files ({len(test_files)})")
-print(f"Test Distribution:{list(Counter(sorted(test_labels)).items())}\n")
-
 print(f"Validation files ({len(val_files)})")
 print(f"Validation Distribution:{list(Counter(sorted(val_labels)).items())}\n")
+
+print(f"Test files ({len(test_files)})")
+print(f"Test Distribution:{list(Counter(sorted(test_labels)).items())}\n")
 
 action_categories = sorted(list(set(train_labels)))
 print(f"Action categories ({len(action_categories)}):\n{action_categories}")

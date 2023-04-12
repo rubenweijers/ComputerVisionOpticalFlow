@@ -1,5 +1,9 @@
 # Custom
 Stanford40/
+video_data/
+test_train_splits/
+data/hmdb51_org.rar
+data/test_train_splits.rar
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

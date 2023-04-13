@@ -97,12 +97,12 @@ if __name__ == "__main__":
                    for filepath, label in tzip(X_train, y_train, desc="Loading X_train data")]
         X_val = [load_video(filepath, label, mapping, greyscale=False)
                  for filepath, label in tzip(X_val, y_val, desc="Loading X_val data")]
-        # X_test = [load_video(filepath, label, mapping, greyscale=False)
-        #           for filepath, label in tzip(X_test, y_test, desc="Loading X_test data")]
+        X_test = [load_video(filepath, label, mapping, greyscale=False)
+                  for filepath, label in tzip(X_test, y_test, desc="Loading X_test data")]
 
         X_train = np.array([imgs[0] for imgs in X_train])  # Only use one frame
         X_val = np.array([imgs[0] for imgs in X_val])
-        # X_test = np.array([imgs[0] for imgs in X_test])
+        X_test = np.array([imgs[0] for imgs in X_test])
 
     elif model_variation == "model3":  # Use optical flow
         # Convert filepaths to optical flow images
@@ -135,6 +135,7 @@ if __name__ == "__main__":
 
     # Prepare the model
     model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size)
+    model.summary()
 
     tensorboard_callback = TensorBoard(log_dir=f"./logs/{model_variation}")
     history = model.fit(X_train, y_train, epochs=epochs, validation_data=(
@@ -147,5 +148,4 @@ if __name__ == "__main__":
 
     # Evaluate the model
     loss, accuracy = model.evaluate(X_test, y_test)
-    print(f"Loss: {loss:.2f}; Accuracy: {accuracy:.2f}")
     print(f"Loss: {loss:.2f}; Accuracy: {accuracy:.2f}")

@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.utils import to_categorical
+from tqdm import tqdm
 from tqdm.contrib import tzip
 
 from models import make_model, prepare_model
@@ -85,38 +86,6 @@ def deepflow(img1, img2):
 
 
 if __name__ == "__main__":
-    # Load the data from the HMDB dataset
-    X_train, y_train, X_val, y_val, X_test, y_test, mapping = load_data("data/hmdb.pickle")
-    print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
-
-    model_variation = "model2"  # Either {"model2", "model3"}
-
-    if model_variation == "model2":  # Do not use optical flow, but use the middle frame
-        # Convert filepaths to images
-        X_train = [load_video(filepath, label, mapping, greyscale=False)
-                   for filepath, label in tzip(X_train, y_train, desc="Loading X_train data")]
-        X_val = [load_video(filepath, label, mapping, greyscale=False)
-                 for filepath, label in tzip(X_val, y_val, desc="Loading X_val data")]
-        X_test = [load_video(filepath, label, mapping, greyscale=False)
-                  for filepath, label in tzip(X_test, y_test, desc="Loading X_test data")]
-
-        X_train = np.array([imgs[0] for imgs in X_train])  # Only use one frame
-        X_val = np.array([imgs[0] for imgs in X_val])
-        X_test = np.array([imgs[0] for imgs in X_test])
-
-    elif model_variation == "model3":  # Use optical flow
-        # Convert filepaths to optical flow images
-        X_train = [deepflow(*load_video(filepath, label, greyscale=True))
-                   for filepath, label in tzip(X_train[:10], y_train[:10], desc="Loading X_train data")]
-        # X_val = [deepflow(*load_video(filepath, label, greyscale=True))
-        #          for filepath, label in tzip(X_val, y_val, desc="Loading X_val data")]
-        # X_test = [deepflow(*load_video(filepath, label, greyscale=True))
-        #           for filepath, label in tzip(X_test, y_test, desc="Loading X_test data")]
-
-        X_train = np.array(X_train)
-        # X_val = np.array(X_val)
-        # X_test = np.array(X_test)
-
     kernel_size = 3
     pool_size = 2
     pooling_type = "avg"
@@ -126,24 +95,55 @@ if __name__ == "__main__":
 
     learning_rate = 0.01
     batch_size = 64
-    total_size = X_train.shape[0]
     epochs = 15
+
+    model_variation = "model3"  # Either {"model2", "model3"}
+    greyscale = False if model_variation == "model2" else True  # Use greyscale if using optical flow
+    resize = (112, 112)  # Make all images the same size
+
+    # Load the data from the HMDB dataset
+    X_train, y_train, X_val, y_val, X_test, y_test, mapping = load_data("data/hmdb.pickle")
+    print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
+
+    # Convert filepaths to images
+    X_train = [load_video(filepath, label, mapping, greyscale=greyscale, resize=resize)
+               for filepath, label in tzip(X_train, y_train, desc="Loading X_train data")]
+    X_val = [load_video(filepath, label, mapping, greyscale=greyscale, resize=resize)
+             for filepath, label in tzip(X_val, y_val, desc="Loading X_val data")]
+    X_test = [load_video(filepath, label, mapping, greyscale=greyscale, resize=resize)
+              for filepath, label in tzip(X_test, y_test, desc="Loading X_test data")]
+
+    if model_variation == "model2":  # Do not use optical flow, but use the middle frame
+        X_train = np.array([imgs[0] for imgs in X_train])  # Only use one frame
+        X_val = np.array([imgs[0] for imgs in X_val])
+        X_test = np.array([imgs[0] for imgs in X_test])
+
+    elif model_variation == "model3":  # Use optical flow
+        # Convert two images to optical flow image
+        X_train = np.array([deepflow(imgs[0], imgs[1]) for imgs in tqdm(X_train, desc="Calculating X_train optical flow")])
+        X_val = np.array([deepflow(imgs[0], imgs[1]) for imgs in tqdm(X_val, desc="Calculating X_val optical flow")])
+        X_test = np.array([deepflow(imgs[0], imgs[1]) for imgs in tqdm(X_test, desc="Calculating X_test optical flow")])
+
+    print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
+
+    total_size = X_train.shape[0]  # For the learning rate scheduler
+    input_shape = X_train.shape[1:]  # For the model
 
     # Create the model
     model = make_model(kernel_size=kernel_size, pool_size=pool_size, pooling_type=pooling_type,
-                       dropout_value=dropout_value, conv_act=conv_act)
+                       dropout_value=dropout_value, conv_act=conv_act, input_shape=input_shape, normalise=normalise)
 
     # Prepare the model
     model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size)
     model.summary()
 
     tensorboard_callback = TensorBoard(log_dir=f"./logs/{model_variation}")
-    history = model.fit(X_train, y_train, epochs=epochs, validation_data=(
-        X_val, y_val), batch_size=batch_size, callbacks=[tensorboard_callback])
-    model.save(f"./models/model_{model_variation}.h5")
+    history = model.fit(X_train, y_train, epochs=epochs, validation_data=(X_val, y_val),
+                        batch_size=batch_size, callbacks=[tensorboard_callback])
+    model.save(f"./models/{model_variation}.h5")
 
     # Save the history
-    with open(f"./history/history_{model_variation}.pkl", "wb") as f:
+    with open(f"./history/{model_variation}.pkl", "wb") as f:
         pickle.dump(history.history, f)
 
     # Evaluate the model

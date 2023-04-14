@@ -135,12 +135,12 @@ def preprocess_data_hmdb(model_variation: str = "model2", pickle_location: str =
         X_train_flow, X_val_flow, X_test_flow = filepath2videos(X_train, X_val, X_test, y_train, y_val, y_test, mapping,
                                                                 greyscale=True, resize=resize)
 
-        X_train_frames, X_val_frames, X_test_frames = preprocess_model2(X_train, X_val, X_test)
-        X_train_flow, X_val_flow, X_test_flow = preprocess_model3(X_train, X_val, X_test)
+        X_train_frames, X_val_frames, X_test_frames = preprocess_model2(X_train_frames, X_val_frames, X_test_frames)
+        X_train_flow, X_val_flow, X_test_flow = preprocess_model3(X_train_flow, X_val_flow, X_test_flow)
 
-        X_train = np.concatenate((X_train_frames, X_train_flow), axis=3)
-        X_val = np.concatenate((X_val_frames, X_val_flow), axis=3)
-        X_test = np.concatenate((X_test_frames, X_test_flow), axis=3)
+        X_train = [X_train_frames, X_train_flow]
+        X_val = [X_val_frames, X_val_flow]
+        X_test = [X_test_frames, X_test_flow]
 
     else:
         raise ValueError(f"Invalid model variation: {model_variation}")

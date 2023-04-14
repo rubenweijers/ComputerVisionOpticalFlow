@@ -7,7 +7,7 @@ from tensorflow.keras.optimizers import Adam
 
 
 def make_model(kernel_size: int = 3, pool_size: int = 2, pooling_type: str = "avg",
-               dropout_value: float = None, conv_act: str = "relu", normalise: bool = False):
+               dropout_value: float = None, conv_act: str = "relu", normalise: bool = False, input_shape: tuple = (112, 112, 3)):
     """The model used for the experiments."""
 
     if pooling_type == "max":
@@ -26,7 +26,7 @@ def make_model(kernel_size: int = 3, pool_size: int = 2, pooling_type: str = "av
 
     # Input shape defined here is (112, 112, 3) because the images are resized to 112x112
     model = Sequential()
-    model.add(Conv2D(64, kernel_size, activation=conv_act, input_shape=(112, 112, 3)))
+    model.add(Conv2D(64, kernel_size, activation=conv_act, input_shape=input_shape))
 
     if normalise:
         model.add(BatchNormalization())

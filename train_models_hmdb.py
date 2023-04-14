@@ -11,7 +11,7 @@ from tqdm.contrib import tzip
 from models import make_model, prepare_model
 
 
-def load_data(filepath: str = "data/hmdb.pickle"):
+def load_data_hmdb(filepath: str = "data/hmdb.pickle"):
     with open(filepath, "rb") as f:
         data = pickle.load(f)
 
@@ -97,12 +97,12 @@ if __name__ == "__main__":
     batch_size = 64
     epochs = 15
 
-    model_variation = "model3"  # Either {"model2", "model3"}
+    model_variation = "model2"  # Either {"model2", "model3"}
     greyscale = False if model_variation == "model2" else True  # Use greyscale if using optical flow
     resize = (112, 112)  # Make all images the same size
 
     # Load the data from the HMDB dataset
-    X_train, y_train, X_val, y_val, X_test, y_test, mapping = load_data("data/hmdb.pickle")
+    X_train, y_train, X_val, y_val, X_test, y_test, mapping = load_data_hmdb("data/hmdb.pickle")
     print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
 
     # Convert filepaths to images

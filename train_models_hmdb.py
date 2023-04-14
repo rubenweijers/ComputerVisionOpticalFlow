@@ -1,9 +1,10 @@
 import pickle
 
 from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.models import load_model
 
 from data_preprocessing import preprocess_data_hmdb
-from models import make_model, prepare_model
+from models import DecayingLRSchedule, make_model, prepare_model
 
 if __name__ == "__main__":
     kernel_size = 3
@@ -18,21 +19,23 @@ if __name__ == "__main__":
     epochs = 15
 
     model_variation = "model2"  # Either {"model2", "model3"}
+    pretrained_model_fp = "./models/model1.h5"  # Path to the pretrained model
     resize = (112, 112)  # Make all images the same size
 
     X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data_hmdb(model_variation=model_variation, resize=resize)
 
     print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
 
-    total_size = X_train.shape[0]  # For the learning rate scheduler
-    input_shape = X_train.shape[1:]  # For the model
+    if model_variation == "model2":
+        # Use the pretrained model from model1 for colour images
+        model = load_model(pretrained_model_fp, custom_objects={"DecayingLRScheduler": DecayingLRSchedule})
+    else:  # Start training optical flow model from scratch
+        total_size = X_train.shape[0]  # For the learning rate scheduler
+        input_shape = X_train.shape[1:]  # For the model
+        model = make_model(kernel_size=kernel_size, pool_size=pool_size, pooling_type=pooling_type, dropout_value=dropout_value,
+                           conv_act=conv_act, input_shape=input_shape, normalise=normalise, model_variation=model_variation)
+        model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size)
 
-    # Create the model
-    model = make_model(kernel_size=kernel_size, pool_size=pool_size, pooling_type=pooling_type, dropout_value=dropout_value,
-                       conv_act=conv_act, input_shape=input_shape, normalise=normalise, model_variation=model_variation)
-
-    # Prepare the model
-    model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size)
     model.summary()
 
     tensorboard_callback = TensorBoard(log_dir=f"./logs/{model_variation}")

@@ -132,8 +132,14 @@ def preprocess_data_hmdb(model_variation: str = "model2", pickle_location: str =
         # We need both the RGB and greyscale images for model 4
         X_train_frames, X_val_frames, X_test_frames = filepath2videos(X_train, X_val, X_test, y_train, y_val, y_test, mapping,
                                                                       greyscale=False, resize=resize)
-        X_train_flow, X_val_flow, X_test_flow = filepath2videos(X_train, X_val, X_test, y_train, y_val, y_test, mapping,
-                                                                greyscale=True, resize=resize)
+
+        # Greyscale data for optical flow, instead of calling filepath2videos again
+        X_train_flow = [(cv2.cvtColor(imgs[0], cv2.COLOR_BGR2GRAY), cv2.cvtColor(imgs[1], cv2.COLOR_BGR2GRAY))
+                        for imgs in tqdm(X_train_frames, desc="Converting X_train to greyscale")]
+        X_val_flow = [(cv2.cvtColor(imgs[0], cv2.COLOR_BGR2GRAY), cv2.cvtColor(imgs[1], cv2.COLOR_BGR2GRAY))
+                      for imgs in tqdm(X_val_frames, desc="Converting X_val to greyscale")]
+        X_test_flow = [(cv2.cvtColor(imgs[0], cv2.COLOR_BGR2GRAY), cv2.cvtColor(imgs[1], cv2.COLOR_BGR2GRAY))
+                       for imgs in tqdm(X_test_frames, desc="Converting X_test to greyscale")]
 
         X_train_frames, X_val_frames, X_test_frames = preprocess_model2(X_train_frames, X_val_frames, X_test_frames)
         X_train_flow, X_val_flow, X_test_flow = preprocess_model3(X_train_flow, X_val_flow, X_test_flow)

@@ -1,9 +1,10 @@
 import pickle
-import matplotlib.pyplot as plt
+
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
-from keras.utils import to_categorical
 from keras.preprocessing.image import ImageDataGenerator
+from keras.utils import to_categorical
 from tensorflow.keras.callbacks import TensorBoard
 
 from models import make_model, prepare_model
@@ -73,7 +74,7 @@ train_datagen = ImageDataGenerator(rotation_range=20,
                                    shear_range=0.2,
                                    zoom_range=0.2,
                                    horizontal_flip=True,
-                                   fill_mode='nearest')
+                                   fill_mode="nearest")
 
 # Fit the data generator to the training data
 train_datagen.fit(x_train)
@@ -81,30 +82,29 @@ train_datagen.fit(x_train)
 # Use the generator to create augmented image batches
 train_generator = train_datagen.flow(x_train, y_train, batch_size=64)
 
-# Define a function to plot the train and validation accuracy and loss graphs
+
 def plot_acc_loss(history):
     # Plot the train and validation accuracy
-    plt.plot(history.history['accuracy'], label='train_acc')
-    plt.plot(history.history['val_accuracy'], label='val_acc')
-    plt.title('Model Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
+    plt.plot(history.history["accuracy"], label="train_acc")
+    plt.plot(history.history["val_accuracy"], label="val_acc")
+    plt.title("Model Accuracy")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
     plt.legend()
     plt.show()
 
     # Plot the train and validation loss
-    plt.plot(history.history['loss'], label='train_loss')
-    plt.plot(history.history['val_loss'], label='val_loss')
-    plt.title('Model Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
+    plt.plot(history.history["loss"], label="train_loss")
+    plt.plot(history.history["val_loss"], label="val_loss")
+    plt.title("Model Loss")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
     plt.legend()
     plt.show()
 
 
 if __name__ == "__main__":
     # Load the data from Stanford40.pickle
-
     print(f"{x_train.shape=}; {y_train.shape=}; {x_val.shape=}; {y_val.shape=}; {x_test.shape=}; {y_test.shape=}")
 
     kernel_sizes = (7, 5, 3)
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     lr_schedule = "decay"
     opt = "adam"
 
-    model_variation = "model1_augmented"
+    model_variation = "model1_augmented"  # Either {model1, model1_augmented}
 
     # Create the model
     model = make_model(kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, pooling_type=pooling_type,
@@ -135,19 +135,21 @@ if __name__ == "__main__":
                           lr_schedule=lr_schedule, opt=opt)
 
     tensorboard_callback = TensorBoard(log_dir=f"./logs/{model_variation}")
-
-    history = model.fit(train_generator,
-                    steps_per_epoch=len(x_train)//batch_size,
-                    epochs=epochs,
-                    validation_data=(x_val, y_val),
-                    callbacks=[tensorboard_callback])
-
-    history = model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val),
-                        batch_size=batch_size, callbacks=[tensorboard_callback])
+    if model_variation == "model1_augmented":
+        history = model.fit(train_generator,
+                            steps_per_epoch=len(x_train)//batch_size,
+                            epochs=epochs,
+                            validation_data=(x_val, y_val),
+                            callbacks=[tensorboard_callback])
+    elif model_variation == "model1":
+        history = model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val),
+                            batch_size=batch_size, callbacks=[tensorboard_callback])
+    else:
+        raise ValueError("Invalid model_variation")
 
     model.save(f"./models/{model_variation}.h5")
 
-    # # Save the history
+    # Save the history
     with open(f"./history/{model_variation}.pkl", "wb") as f:
         pickle.dump(history.history, f)
 

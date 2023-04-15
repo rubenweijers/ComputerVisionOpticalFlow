@@ -64,6 +64,10 @@ def load_video(filename: str, label: str, mapping: dict, frame_n: int = "halfway
                 img = cv2.resize(img, resize)  # Resize the image
             imgs.append(img)
 
+        # Get frame at three/fourth of the way through the video
+        # This way, more motion is visible in the optical flow
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_n + int(cap.get(cv2.CAP_PROP_FRAME_COUNT) / 4))
+
     cap.release()
 
     if len(imgs) != 2:

@@ -1,7 +1,8 @@
 import pickle
 import numpy as np
 import cv2
-import os
+from keras.utils import to_categorical
+
 
 from tensorflow.keras.callbacks import TensorBoard
 
@@ -54,6 +55,16 @@ y_test = test_labels
 
 x_val = val_images
 y_val = val_labels
+
+def encode_labels(y_train, y_val, y_test):
+    label_map = {label: idx for idx, label in enumerate(np.unique(y_train))}
+    y_train = np.array([label_map[label] for label in y_train])
+    y_val = np.array([label_map[label] for label in y_val])
+    y_test = np.array([label_map[label] for label in y_test])
+    
+    return (to_categorical(y_train), to_categorical(y_val), to_categorical(y_test))
+
+y_train, y_val, y_test = encode_labels(y_train, y_val, y_test)
 
 
 if __name__ == "__main__":

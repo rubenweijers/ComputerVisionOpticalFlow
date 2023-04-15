@@ -1,49 +1,78 @@
 import pickle
 import numpy as np
-import opencv as cv2
+import cv2
+import os
 
 from tensorflow.keras.callbacks import TensorBoard
 
 from models import make_model, prepare_model
 
 
-def load_data():
-    with open('data/Stanford40.pickle', 'rb') as f:
-        data = pickle.load(f)
-    X_train = np.array(data['train_files'])
-    y_train = np.array(data['train_labels'])
-    X_val = np.array(data['val_files'])
-    y_val = np.array(data['val_labels'])
-    X_test = np.array(data['test_files'])
-    y_test = np.array(data['test_labels'])
-    return X_train, y_train, X_val, y_val, X_test, y_test
 
-def load_images():
-    img = cv2.imread(f"./Stanford40/JPEGImages/{train_files[IMAGE_N]}")
-    print(f"An image with the label: {train_labels[IMAGE_N]}")
+# Load data from pickle file
+with open("data/Stanford40.pickle", "rb") as f:
+    data = pickle.load(f)
 
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Convert BGR to RGB
-    plt.imshow(img)  # Show image with matplotlib
-    plt.show()
+# Load image data for each file path
+train_data = []
+for file_path in data["train_files"]:
+    img = cv2.imread(f"./Stanford40/JPEGImages/{file_path}")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    resized_img = cv2.resize(img, (112, 112))
+    train_data.append((resized_img, data["train_labels"][data["train_files"].index(file_path)]))
+
+test_data = []
+for file_path in data["test_files"]:
+    img = cv2.imread(f"./Stanford40/JPEGImages/{file_path}")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    resized_img = cv2.resize(img, (112, 112))
+    test_data.append((resized_img, data["test_labels"][data["test_files"].index(file_path)]))
+
+val_data = []
+for file_path in data["val_files"]:
+    img = cv2.imread(f"./Stanford40/JPEGImages/{file_path}")
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    resized_img = cv2.resize(img, (112, 112))
+    val_data.append((resized_img, data["val_labels"][data["val_files"].index(file_path)]))
+
+# Convert data to numpy arrays
+train_images = np.array([i[0] for i in train_data])
+train_labels = np.array([i[1] for i in train_data])
+
+test_images = np.array([i[0] for i in test_data])
+test_labels = np.array([i[1] for i in test_data])
+
+val_images = np.array([i[0] for i in val_data])
+val_labels = np.array([i[1] for i in val_data])
+
+# Split data into features and labels
+x_train = train_images
+y_train = train_labels
+
+x_test = test_images
+y_test = test_labels
+
+x_val = val_images
+y_val = val_labels
 
 
 if __name__ == "__main__":
     # Load the data from Stanford40.pickle
 
 
-    X_train, y_train, X_val, y_val, X_test, y_test = load_data()
-    print(f"{X_train.shape=}; {y_train.shape=}; {X_val.shape=}; {y_val.shape=}; {X_test.shape=}; {y_test.shape=}")
+    print(f"{x_train.shape=}; {y_train.shape=}; {x_val.shape=}; {y_val.shape=}; {x_test.shape=}; {y_test.shape=}")
     
-    kernel_size = 3
-    pool_size = 2
-    pooling_type = "max"
+    kernel_sizes = (7, 5, 3)
+    pool_sizes = (2, 2, 2)
+    filter_sizes = (32, 64, 128)
+    pooling_type = "avg"
     dropout_value = None
     conv_act = "relu"
     normalise = False
 
     learning_rate = 0.01
     batch_size = 64
-    total_size = X_train.shape[0]
+    total_size = x_train.shape[0]
     epochs = 15
 
     model_variation = "averagejoe"  # Choose from: {baseline, nike, collegedropout, normaliser2000, averagejoe}
@@ -62,15 +91,15 @@ if __name__ == "__main__":
         raise ValueError(f"Invalid model variation: {model_variation}")
 
     # Create the model
-    model = make_model(kernel_size=kernel_size, pool_size=pool_size, pooling_type=pooling_type,
+    model = make_model(kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, pooling_type=pooling_type,
                        dropout_value=dropout_value, conv_act=conv_act)
 
     # Prepare the model
     model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size)
 
     tensorboard_callback = TensorBoard(log_dir=f"./logs/{model_variation}")
-    history = model.fit(X_train, y_train, epochs=epochs, validation_data=(
-        X_val, y_val), batch_size=batch_size, callbacks=[tensorboard_callback])
+    history = model.fit(x_train, y_train, epochs=epochs, validation_data=(
+        x_val, y_val), batch_size=batch_size, callbacks=[tensorboard_callback])
     model.save(f"./models/model_{model_variation}.h5")
 
     # Save the history
@@ -78,5 +107,5 @@ if __name__ == "__main__":
         pickle.dump(history.history, f)
 
     # Evaluate the model
-    loss, accuracy = model.evaluate(X_test, y_test)
+    loss, accuracy = model.evaluate(x_test, y_test)
     print(f"Loss: {loss:.2f}; Accuracy: {accuracy:.2f}")

@@ -5,7 +5,6 @@ from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization,
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import SGD, Adam
 from tensorflow.keras.optimizers.schedules import LearningRateSchedule
-from tensorflow_addons.optimizers import CyclicalLearningRate
 
 
 def make_model(kernel_sizes=(7, 5, 3), pool_sizes=(2, 2, 2), filter_sizes=(64, 32, 16), dense_sizes=(128, 64), pooling_type: str = "avg",

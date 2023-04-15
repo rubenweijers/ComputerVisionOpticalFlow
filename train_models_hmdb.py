@@ -8,20 +8,8 @@ from data_preprocessing import preprocess_data_hmdb
 from models import DecayingLRSchedule, make_model, prepare_model
 
 if __name__ == "__main__":
-    kernel_sizes = (7, 5, 3)
-    pool_sizes = (2, 2, 2)
-    filter_sizes = (32, 64, 128)
-    dense_sizes = (1024, 512)
-    pooling_type = "max"
-    dropout_value = 0.5
-    conv_act = "relu"
-    normalise = False
-
-    learning_rate = 0.001
     batch_size = 64
-    epochs = 1
-    lr_schedule = "decay"
-    opt = "adam"
+    epochs = 15
 
     model_variation = "model3"  # Either {"model2", "model3"}
     resize = (112, 112)  # Make all images the same size
@@ -44,9 +32,23 @@ if __name__ == "__main__":
         # Use the pretrained model from model1 for colour images
         pretrained_model_fp = "./models/model1.h5"  # Path to the pretrained model
         model = load_model(pretrained_model_fp, custom_objects={"DecayingLRScheduler": DecayingLRSchedule})
-    else:  # Start training optical flow model from scratch
+    elif model_variation == "model3":  # Start from scratch, optical flow images
+        kernel_sizes = (7, 5, 3)
+        pool_sizes = (2, 2, 2)
+        filter_sizes = (32, 64, 128)
+        dense_sizes = (1024, 512)
+        pooling_type = "max"
+        dropout_value = 0.5
+        conv_act = "relu"
+        normalise = False
+
+        learning_rate = 0.001
+        lr_schedule = "decay"
+        opt = "adam"
+
         total_size = X_train.shape[0]  # For the learning rate scheduler
         input_shape = X_train.shape[1:]  # For the model
+
         model = make_model(kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, filter_sizes=filter_sizes,
                            dense_sizes=dense_sizes, pooling_type=pooling_type, dropout_value=dropout_value,
                            conv_act=conv_act, normalise=normalise, input_shape=input_shape, model_variation=model_variation)

@@ -3,10 +3,12 @@ from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization,
                                      Conv2D, Dense, Dropout, Flatten,
                                      MaxPooling2D)
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.optimizers.schedules import LearningRateSchedule
+from tensorflow_addons.optimizers import CyclicalLearningRate
 
 
-def make_model(kernel_size: int = 3, pool_size: int = 2, pooling_type: str = "avg",
+def make_model(kernel_sizes=(7, 5, 3), pool_sizes=(2, 2, 2), filter_sizes=(64, 32, 16), dense_sizes=(128, 64), pooling_type: str = "avg",
                dropout_value: float = None, conv_act: str = "relu", normalise: bool = False, input_shape: tuple = (112, 112, 3),
                model_variation: str = "model2") -> Sequential:
     """The model used for the experiments."""
@@ -15,6 +17,8 @@ def make_model(kernel_size: int = 3, pool_size: int = 2, pooling_type: str = "av
         pooling = MaxPooling2D
     elif pooling_type == "avg":
         pooling = AveragePooling2D
+    elif pooling_type is None:
+        ...
     else:
         raise ValueError("Pooling must be either 'max' or 'average'.")
 
@@ -27,38 +31,52 @@ def make_model(kernel_size: int = 3, pool_size: int = 2, pooling_type: str = "av
 
     # Input shape defined here is (112, 112, 3) because the images are resized to 112x112
     model = Sequential()
-    model.add(Conv2D(64, kernel_size, activation=conv_act, input_shape=input_shape, name=f"{model_variation}_conv2d_1"))
 
-    if normalise:
-        model.add(BatchNormalization(name=f"{model_variation}_batchnorm_1"))
+    # Make conv blocks
+    for layer_n, (kernel, pool, filter) in enumerate(zip(kernel_sizes, pool_sizes, filter_sizes), start=1):
+        model.add(Conv2D(filter, kernel, activation=conv_act, input_shape=input_shape, name=f"{model_variation}_conv2d_{layer_n}"))
 
-    model.add(pooling(pool_size, name=f"{model_variation}_pooling_1"))
-    model.add(Conv2D(32, kernel_size, activation=conv_act, name=f"{model_variation}_conv2d_2"))
+        if normalise:
+            model.add(BatchNormalization(name=f"{model_variation}_batchnorm_{layer_n}"))
+        if pooling_type is not None:
+            model.add(pooling(pool, name=f"{model_variation}_pooling_{layer_n}"))
 
-    if normalise:
-        model.add(BatchNormalization(name=f"{model_variation}_batchnorm_2"))
-
-    model.add(pooling(pool_size, name=f"{model_variation}_pooling_2"))
-    model.add(Conv2D(16, kernel_size, activation=conv_act, name=f"{model_variation}_conv2d_3"))
-
-    if normalise:
-        model.add(BatchNormalization(name=f"{model_variation}_batchnorm_3"))
-
-    model.add(pooling(pool_size, name=f"{model_variation}_pooling_3"))
     model.add(Flatten(name=f"{model_variation}_flatten"))
 
     if dropout_value is not None:
         model.add(Dropout(dropout_value, name=f"{model_variation}_dropout"))
 
-    model.add(Dense(128, activation="relu", name=f"{model_variation}_dense_1"))
-    model.add(Dense(12, activation="softmax", name=f"{model_variation}_dense_2"))
+    for layer_n, dense in enumerate(dense_sizes, start=1):
+        model.add(Dense(dense, activation="relu", name=f"{model_variation}_dense_{layer_n}"))
+
+    model.add(Dense(12, activation="softmax", name=f"{model_variation}_output"))
     return model
 
 
-def prepare_model(model, learning_rate: float = 0.01, batch_size: int = 64, total_size: int = 48_000):
-    # Decrease the learning rate at a 1/2 of the value every 5 epochs
-    learning_rate_schedule = DecayingLRSchedule(learning_rate, batch_size, total_size)
-    opt = Adam(learning_rate=learning_rate_schedule)
+def scale_fn(x):
+    return 1.0 / (2.0 ** (x - 1))
+
+
+def prepare_model(model, learning_rate: float = 0.01, batch_size: int = 64, total_size: int = 48_000, lr_schedule: str = "const", opt="adam"):
+    if lr_schedule == "const":
+        learning_rate_schedule = learning_rate
+    elif lr_schedule == "decay":
+        # Decrease the learning rate at a 1/2 of the value every 5 epochs
+        learning_rate_schedule = DecayingLRSchedule(learning_rate, batch_size, total_size)
+    elif lr_schedule == "cyclic":
+        # Based on: https://www.tensorflow.org/addons/tutorials/optimizers_cyclicallearningrate
+        initial_learning_rate = 0.00001
+        steps_per_epoch = tf.math.floor(total_size / batch_size)
+        learning_rate_schedule = CyclicalLearningRate(initial_learning_rate=initial_learning_rate, maximal_learning_rate=learning_rate,
+                                                      scale_fn=scale_fn,
+                                                      step_size=2 * steps_per_epoch)
+    else:
+        raise ValueError("lr_schedule must be either 'const', 'decay' or 'cyclic'.")
+
+    if opt == "adam":
+        opt = Adam(learning_rate=learning_rate_schedule)
+    elif opt == "sgd":
+        opt = SGD(learning_rate=learning_rate_schedule)
 
     model.compile(optimizer=opt, loss="categorical_crossentropy", metrics=["accuracy"])
     return model
@@ -90,7 +108,7 @@ def combine_models(model_frames, model_deepflow, n_classes: int = 12):
     return model
 
 
-class CyclicLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+class CyclicLRSchedule(LearningRateSchedule):
     def __init__(self, learning_rate: float, batch_size: int, total_size: int, decay_rate: float = 0.5,
                  decay_steps: int = 5, warmup_epochs: int = 5, min_lr: float = 1e-6):
         super(CyclicLRSchedule, self).__init__()
@@ -127,7 +145,7 @@ class CyclicLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
         }
 
 
-class DecayingLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
+class DecayingLRSchedule(LearningRateSchedule):
     def __init__(self, lr, batch_size, total_size) -> None:
         super().__init__()
         self.lr = lr
@@ -147,4 +165,5 @@ class DecayingLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
 
 if __name__ == "__main__":
     model = make_model()
+    model.summary()
     model.summary()

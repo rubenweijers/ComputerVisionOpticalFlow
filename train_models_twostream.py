@@ -6,7 +6,8 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
 
 from data_preprocessing import preprocess_data_hmdb
-from models import DecayingLRSchedule, combine_models, prepare_model
+from models import (CyclicLRSchedule, DecayingLRSchedule, combine_models,
+                    prepare_model)
 
 if __name__ == "__main__":
     kernel_size = 3
@@ -44,8 +45,9 @@ if __name__ == "__main__":
     total_size = X_train[0].shape[0]  # For the learning rate scheduler
 
     # Load trained models from file
-    model_frames = load_model(f"./models/model2.h5", custom_objects={"DecayingLRSchedule": DecayingLRSchedule})
-    model_deepflow = load_model(f"./models/model3.h5", custom_objects={"DecayingLRSchedule": DecayingLRSchedule})
+    custom_objects = {"DecayingLRSchedule": DecayingLRSchedule, "CyclicLRSchedule": CyclicLRSchedule}
+    model_frames = load_model(f"./models/model2.h5", custom_objects=custom_objects)
+    model_deepflow = load_model(f"./models/model3.h5", custom_objects=custom_objects)
 
     # Combine the models
     model = combine_models(model_frames, model_deepflow)

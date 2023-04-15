@@ -3,6 +3,8 @@ import pickle
 
 import matplotlib.pyplot as plt
 import numpy as np
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
 from tensorflow.keras.models import load_model
 
 from data_preprocessing import preprocess_data_hmdb
@@ -42,6 +44,23 @@ def plot_history(history: dict, model_variation: str) -> None:
     fig.savefig(f"./img/plot_{model_variation}.png")
 
 
+def plot_confusion_matrix(y_test, y_pred, variation: str):
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(10, 10))
+
+    ax = plt.gca().set_aspect("equal")  # Set aspect ratio to square
+    sns.heatmap(cm, annot=True, fmt="d")
+
+    plt.title(f"Confusion matrix for model: {variation}")
+    plt.ylabel("True label")
+    plt.xlabel("Predicted label")
+    # Use classes as labels
+    from data_preparation_HMDB import keep_hmdb51
+    plt.xticks(np.arange(0.5, 12.5, 1), keep_hmdb51, rotation=90)
+    plt.savefig(f"./img/cm_{variation}.png")
+    # plt.show()
+
+
 if __name__ == "__main__":
     scores_train = {}
     scores_val = {}
@@ -49,7 +68,7 @@ if __name__ == "__main__":
 
     resize = (112, 112)
 
-    for model_variation in ("model2", "model3", "model4"):
+    for model_variation in ("model2", "model3", "model4"):  # TODO: add model1
         # If data is not already saved, preprocess it and save it to disk
         if not os.path.exists(f"./data/{model_variation}_{resize[0]}.pickle"):
             X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data_hmdb(model_variation=model_variation, resize=resize)
@@ -88,6 +107,10 @@ if __name__ == "__main__":
 
         # Plot history
         plot_history(history, model_variation)
+
+        # Plot confusion matrix
+        y_pred = np.argmax(model.predict(X_test), axis=1)
+        plot_confusion_matrix(np.argmax(y_test, axis=1), y_pred, model_variation)
 
     # Sort by accuracy
     scores_train_sorted = sorted(scores_train.items(), key=lambda x: x[1], reverse=True)

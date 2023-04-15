@@ -32,3 +32,10 @@ Accuracy/loss graphs can be generated with the `evaluate.py` script. Images are 
 ![Model 2](img/plot_model2.png)
 ![Model 3](img/plot_model3.png)
 ![Model 4](img/plot_model4.png)
+
+## Confusion matrices
+
+![Model 1](img/cm_model1.png)
+![Model 2](img/cm_model2.png)
+![Model 3](img/cm_model3.png)
+![Model 4](img/cm_model4.png)

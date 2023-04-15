@@ -52,9 +52,6 @@ if __name__ == "__main__":
     # Combine the models
     model = combine_models(model_frames, model_deepflow)
 
-    # Graph the model
-    plot_model(model, to_file=f"./models/twostream.png", show_shapes=True, show_layer_names=True)
-
     # Prepare the model
     model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size,
                           lr_schedule=lr_schedule, opt=opt)

@@ -24,7 +24,7 @@ Accuracy/loss graphs can be generated with the `evaluate.py` script. Images are 
 
 ## Two-stream model architecture
 
-![Two-stream](models/twostream.png)
+![Two-stream](img/summary_model4.png)
 
 ## Accuracy/Loss graphs
 

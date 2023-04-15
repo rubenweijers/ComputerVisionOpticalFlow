@@ -6,6 +6,7 @@ import numpy as np
 import seaborn as sns
 from sklearn.metrics import confusion_matrix
 from tensorflow.keras.models import load_model
+from tensorflow.keras.utils import plot_model
 
 from data_preprocessing import preprocess_data_hmdb
 from models import DecayingLRSchedule
@@ -83,6 +84,12 @@ if __name__ == "__main__":
 
         # Load model
         model = load_model(f"./models/{model_variation}.h5", custom_objects={"DecayingLRSchedule": DecayingLRSchedule})
+
+        # Graph model
+        plot_model(model, to_file=f"./img/summary_{model_variation}.png", show_shapes=True, show_layer_names=True)
+
+        # Print model summary
+        model.summary()
 
         # Evaluate model on training set
         loss_train, accuracy_train = model.evaluate(X_train, y_train, verbose=0)

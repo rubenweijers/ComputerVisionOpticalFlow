@@ -64,12 +64,8 @@ def prepare_model(model, learning_rate: float = 0.01, batch_size: int = 64, tota
         # Decrease the learning rate at a 1/2 of the value every 5 epochs
         learning_rate_schedule = DecayingLRSchedule(learning_rate, batch_size, total_size)
     elif lr_schedule == "cyclic":
-        # Based on: https://www.tensorflow.org/addons/tutorials/optimizers_cyclicallearningrate
-        initial_learning_rate = 0.00001
-        steps_per_epoch = tf.math.floor(total_size / batch_size)
-        learning_rate_schedule = CyclicalLearningRate(initial_learning_rate=initial_learning_rate, maximal_learning_rate=learning_rate,
-                                                      scale_fn=scale_fn,
-                                                      step_size=2 * steps_per_epoch)
+        # Cyclic learning rate
+        learning_rate_schedule = CyclicLRSchedule(learning_rate, batch_size, total_size)
     else:
         raise ValueError("lr_schedule must be either 'const', 'decay' or 'cyclic'.")
 
@@ -131,7 +127,9 @@ class CyclicLRSchedule(LearningRateSchedule):
             self.learning_rate *= self.decay_rate
 
         # Cyclic
-        return float(tf.math.floor(self.learning_rate * (step + 1) / tf.cast(tf.math.floor(self.warmup_epochs * self.total_size / self.batch_size), dtype=tf.float32).astype(tf.float32)))
+        lr = float(tf.math.floor(self.learning_rate * (step + 1) / tf.cast(tf.math.floor(self.warmup_epochs *
+                   self.total_size / self.batch_size), dtype=tf.float32).astype(tf.float32)))
+        return tf.math.maximum(lr, self.min_lr)
 
     def get_config(self):
         return {

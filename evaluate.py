@@ -9,35 +9,37 @@ from data_preprocessing import preprocess_data_hmdb
 from models import DecayingLRSchedule
 
 
-def plot_history(history: dict, variation: str) -> None:
+def plot_history(history: dict, model_variation: str) -> None:
     """Plot the history of a model."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5), sharex=True)
 
-    ax1.plot(history["loss"], label="Loss")
-    ax1.plot(history["val_loss"], label="Validation loss")
+    ax1.plot(history["loss"], label="Training Loss")
+    ax1.plot(history["val_loss"], label="Validation Loss")
     ax1.set_xlabel("Epoch")
     ax1.set_ylabel("Loss")
     ax1.set_xticks(np.arange(0, len(history["loss"]), 1))
+    ax1.set_xticklabels(np.arange(1, len(history["loss"]) + 1, 1))
     ax1.legend()
 
-    ax2.plot(history["accuracy"], label="Accuracy")
-    ax2.plot(history["val_accuracy"], label="Validation accuracy")
+    ax2.plot(history["accuracy"], label="Training Accuracy")
+    ax2.plot(history["val_accuracy"], label="Validation Accuracy")
     ax2.set_xlabel("Epoch")
     ax2.set_ylabel("Accuracy")
     ax2.set_xticks(np.arange(0, len(history["accuracy"]), 1))
+    ax2.set_xticklabels(np.arange(1, len(history["accuracy"]) + 1, 1))
     ax2.legend()
 
-    plt.suptitle(f"Model: {variation}")
+    plt.suptitle(f"Model: {model_variation}")
 
     ax1.yaxis.grid(True)  # Gridlines, only in the horizontal direction
     ax2.yaxis.grid(True)
 
     ax1.set_ylim(0, None)  # Loss has no upper limit
-    ax2.set_ylim(0.5, 1)
+    ax2.set_ylim(0, 1)
 
-    plt.show()
+    # plt.show()
 
-    fig.savefig(f"./img/plot_{variation}.png")
+    fig.savefig(f"./img/plot_{model_variation}.png")
 
 
 if __name__ == "__main__":
@@ -79,6 +81,13 @@ if __name__ == "__main__":
         scores_train[model_variation] = accuracy_train
         scores_val[model_variation] = accuracy_val
         scores_test[model_variation] = accuracy_test
+
+        # Load history
+        with open(f"./history/{model_variation}.pkl", "rb") as f:
+            history = pickle.load(f)
+
+        # Plot history
+        plot_history(history, model_variation)
 
     # Sort by accuracy
     scores_train_sorted = sorted(scores_train.items(), key=lambda x: x[1], reverse=True)

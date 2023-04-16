@@ -7,9 +7,10 @@ import seaborn as sns
 from sklearn.metrics import confusion_matrix
 from tensorflow.keras.models import load_model
 from tensorflow.keras.utils import plot_model
+from tensorflow_addons.optimizers import CyclicalLearningRate
 
 from data_preprocessing import preprocess_data_hmdb
-from models import DecayingLRSchedule
+from models import DecayingLRSchedule, scale_fn
 
 
 def plot_history(history: dict, model_variation: str) -> None:
@@ -69,7 +70,7 @@ if __name__ == "__main__":
 
     resize = (112, 112)
 
-    for model_variation in ("model1", "model1_augmented", "model2", "model3", "model4"):  # TODO: add model1
+    for model_variation in ("model1", "model1_cyclic", "model1_augmented", "model2", "model3", "model4"):  # TODO: add model1
         if model_variation == "model1_augmented":
             fp = f"./data/model1_{resize[0]}.pickle"  # Load the original model1 data, to make results comparable
         else:
@@ -94,7 +95,9 @@ if __name__ == "__main__":
                 X_train, y_train, X_val, y_val, X_test, y_test = pickle.load(f)
 
         # Load model
-        model = load_model(f"./models/{model_variation}.h5", custom_objects={"DecayingLRSchedule": DecayingLRSchedule})
+        model = load_model(f"./models/{model_variation}.h5", custom_objects={"DecayingLRSchedule": DecayingLRSchedule,
+                                                                             "CyclicalLearningRate": CyclicalLearningRate,
+                                                                             "scale_fn": scale_fn})
 
         # Graph model
         plot_model(model, to_file=f"./img/summary_{model_variation}.png", show_shapes=True, show_layer_names=True)

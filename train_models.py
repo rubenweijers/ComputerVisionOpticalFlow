@@ -123,7 +123,7 @@ if __name__ == "__main__":
     lr_schedule = "decay"
     opt = "adam"
 
-    model_variation = "model1"  # Either {model1, model1_augmented}
+    model_variation = "model1_cyclic"  # Either {model1, model1_augmented}
     resize = (112, 112)
     input_shape = (resize[0], resize[1], 3)
 
@@ -136,6 +136,9 @@ if __name__ == "__main__":
                        dense_sizes=dense_sizes, pooling_type=pooling_type, dropout_value=dropout_value,
                        conv_act=conv_act, normalise=normalise, input_shape=input_shape, model_variation=model_variation)
 
+    if model_variation == "model1_cyclic":
+        lr_schedule = "cyclic"  # Change here instead of in the parameters above to store the model with the correct name
+
     # Prepare the model
     model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size, opt=opt,
                           lr_schedule=lr_schedule)
@@ -147,11 +150,9 @@ if __name__ == "__main__":
                             epochs=epochs,
                             validation_data=(x_val, y_val),
                             callbacks=[tensorboard_callback])
-    elif model_variation == "model1":
+    else:  # All other models, e.g. normal or cyclic
         history = model.fit(x_train, y_train, epochs=epochs, validation_data=(x_val, y_val),
                             batch_size=batch_size, callbacks=[tensorboard_callback])
-    else:
-        raise ValueError("Invalid model_variation")
 
     model.save(f"./models/{model_variation}.h5")
 

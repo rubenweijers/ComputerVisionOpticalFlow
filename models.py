@@ -5,6 +5,7 @@ from tensorflow.keras.layers import (AveragePooling2D, BatchNormalization,
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import SGD, Adam
 from tensorflow.keras.optimizers.schedules import LearningRateSchedule
+from tensorflow_addons.optimizers import CyclicalLearningRate
 
 
 def make_model(kernel_sizes=(7, 5, 3), pool_sizes=(2, 2, 2), filter_sizes=(64, 32, 16), dense_sizes=(128, 64), pooling_type: str = "avg",
@@ -52,6 +53,7 @@ def make_model(kernel_sizes=(7, 5, 3), pool_sizes=(2, 2, 2), filter_sizes=(64, 3
     return model
 
 
+@tf.function
 def scale_fn(x):
     return 1.0 / (2.0 ** (x - 1))
 
@@ -64,7 +66,10 @@ def prepare_model(model, learning_rate: float = 0.01, batch_size: int = 64, tota
         learning_rate_schedule = DecayingLRSchedule(learning_rate, batch_size, total_size)
     elif lr_schedule == "cyclic":
         # Cyclic learning rate
-        learning_rate_schedule = CyclicLRSchedule(learning_rate, batch_size, total_size)
+        learning_rate_schedule = CyclicalLearningRate(initial_learning_rate=learning_rate,
+                                                      maximal_learning_rate=learning_rate,
+                                                      scale_fn=scale_fn,
+                                                      step_size=total_size // batch_size)
     else:
         raise ValueError("lr_schedule must be either 'const', 'decay' or 'cyclic'.")
 
@@ -103,45 +108,6 @@ def combine_models(model_frames, model_deepflow, n_classes: int = 12):
     return model
 
 
-class CyclicLRSchedule(LearningRateSchedule):
-    def __init__(self, learning_rate: float, batch_size: int, total_size: int, decay_rate: float = 0.5,
-                 decay_steps: int = 5, warmup_epochs: int = 5, min_lr: float = 1e-6):
-        super(CyclicLRSchedule, self).__init__()
-
-        self.learning_rate = learning_rate
-        self.batch_size = batch_size
-        self.total_size = total_size
-        self.decay_rate = decay_rate
-        self.decay_steps = decay_steps
-        self.warmup_epochs = warmup_epochs
-        self.min_lr = min_lr
-
-    def __call__(self, step):
-        # Warmup
-        if step < self.warmup_epochs * tf.cast(tf.math.floor(self.total_size / self.batch_size), dtype=tf.int64):
-            return float(tf.math.floor(self.learning_rate * (step + 1) / (tf.cast(tf.math.floor(self.warmup_epochs * self.total_size / self.batch_size), dtype=tf.float32).astype(tf.float32))))
-
-        # Decay
-        if step % tf.cast(tf.math.floor(self.total_size / self.batch_size) * self.decay_steps, dtype=tf.int64) == 0:
-            self.learning_rate *= self.decay_rate
-
-        # Cyclic
-        lr = float(tf.math.floor(self.learning_rate * (step + 1) / tf.cast(tf.math.floor(self.warmup_epochs *
-                   self.total_size / self.batch_size), dtype=tf.float32).astype(tf.float32)))
-        return tf.math.maximum(lr, self.min_lr)
-
-    def get_config(self):
-        return {
-            "learning_rate": self.learning_rate,
-            "batch_size": self.batch_size,
-            "total_size": self.total_size,
-            "decay_rate": self.decay_rate,
-            "decay_steps": self.decay_steps,
-            "warmup_epochs": self.warmup_epochs,
-            "min_lr": self.min_lr
-        }
-
-
 class DecayingLRSchedule(LearningRateSchedule):
     def __init__(self, lr, batch_size, total_size) -> None:
         super().__init__()
@@ -162,5 +128,4 @@ class DecayingLRSchedule(LearningRateSchedule):
 
 if __name__ == "__main__":
     model = make_model()
-    model.summary()
     model.summary()

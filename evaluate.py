@@ -69,17 +69,28 @@ if __name__ == "__main__":
 
     resize = (112, 112)
 
-    for model_variation in ("model2", "model3", "model4"):  # TODO: add model1
+    for model_variation in ("model1", "model1_augmented", "model2", "model3", "model4")[:2]:  # TODO: add model1
+        if model_variation == "model1_augmented":
+            fp = f"./data/model1_{resize[0]}.pickle"  # Load the original model1 data, to make results comparable
+        else:
+            fp = f"./data/{model_variation}_{resize[0]}.pickle"
+
         # If data is not already saved, preprocess it and save it to disk
-        if not os.path.exists(f"./data/{model_variation}_{resize[0]}.pickle"):
-            X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data_hmdb(model_variation=model_variation, resize=resize)
+        if not os.path.exists(fp):
+            if model_variation in ("model1", "model1_augmented"):
+                raise ValueError("Run the train_models.py script first")  # Preprocessing of model1 is done in train_models.py
+
+            elif model_variation in ("model2", "model3", "model4"):
+                X_train, y_train, X_val, y_val, X_test, y_test = preprocess_data_hmdb(model_variation=model_variation, resize=resize)
+            else:
+                raise ValueError("Invalid model variation")
 
             # Save the data to disk
-            with open(f"./data/{model_variation}_{resize[0]}.pickle", "wb") as f:
+            with open(fp, "wb") as f:
                 pickle.dump((X_train, y_train, X_val, y_val, X_test, y_test), f)
         else:
             # Load the data from disk
-            with open(f"./data/{model_variation}_{resize[0]}.pickle", "rb") as f:
+            with open(fp, "rb") as f:
                 X_train, y_train, X_val, y_val, X_test, y_test = pickle.load(f)
 
         # Load model

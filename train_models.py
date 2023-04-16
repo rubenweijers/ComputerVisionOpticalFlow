@@ -123,7 +123,12 @@ if __name__ == "__main__":
     lr_schedule = "decay"
     opt = "adam"
 
-    model_variation = "model1_augmented"  # Either {model1, model1_augmented}
+    model_variation = "model1"  # Either {model1, model1_augmented}
+    resize = (112, 112)
+
+    # Save the data to disk
+    with open(f"./data/{model_variation}_{resize[0]}.pickle", "wb") as f:
+        pickle.dump((x_train, y_train, x_val, y_val, x_test, y_test), f)
 
     # Create the model
     model = make_model(kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, pooling_type=pooling_type,

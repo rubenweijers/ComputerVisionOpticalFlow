@@ -6,6 +6,7 @@ data/hmdb51_org.rar
 data/test_train_splits.rar
 history/
 logs/
+models.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

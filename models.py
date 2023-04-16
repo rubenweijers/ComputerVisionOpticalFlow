@@ -95,7 +95,7 @@ def combine_models(model_frames, model_deepflow, n_classes: int = 12):
     decoder = Dense(32, activation="relu", name="decoder_dense_3")(decoder)
 
     # Add the final layer
-    outputs = Dense(n_classes, activation="softmax")(decoder)
+    outputs = Dense(n_classes, activation="softmax", name="decoder_output")(decoder)
 
     # Create a new model
     model = tf.keras.Model(inputs=inputs, outputs=outputs)

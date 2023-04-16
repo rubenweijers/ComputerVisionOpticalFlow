@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     resize = (112, 112)
 
-    for model_variation in ("model1", "model1_augmented", "model2", "model3", "model4")[:2]:  # TODO: add model1
+    for model_variation in ("model1", "model1_augmented", "model2", "model3", "model4"):  # TODO: add model1
         if model_variation == "model1_augmented":
             fp = f"./data/model1_{resize[0]}.pickle"  # Load the original model1 data, to make results comparable
         else:

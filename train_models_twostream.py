@@ -3,21 +3,13 @@ import pickle
 
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.models import load_model
-from tensorflow.keras.utils import plot_model
 
 from data_preprocessing import preprocess_data_hmdb
 from models import (CyclicLRSchedule, DecayingLRSchedule, combine_models,
                     prepare_model)
 
 if __name__ == "__main__":
-    kernel_size = 3
-    pool_size = 2
-    pooling_type = "avg"
-    dropout_value = None
-    conv_act = "relu"
-    normalise = False
-
-    learning_rate = 0.01
+    learning_rate = 0.001
     batch_size = 64
     epochs = 15
     lr_schedule = "decay"
@@ -63,10 +55,10 @@ if __name__ == "__main__":
                         batch_size=batch_size, callbacks=[tensorboard_callback])
     model.save(f"./models/{model_variation}.h5")
 
-    # # Save the history
+    # Save the history
     with open(f"./history/{model_variation}.pkl", "wb") as f:
         pickle.dump(history.history, f)
 
-    # # Evaluate the model
+    # Evaluate the model
     loss, accuracy = model.evaluate(X_test, y_test)
     print(f"Loss: {loss:.2f}; Accuracy: {accuracy:.2f}")

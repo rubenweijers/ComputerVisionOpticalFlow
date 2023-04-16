@@ -11,7 +11,7 @@ if __name__ == "__main__":
     batch_size = 64
     epochs = 15
 
-    model_variation = "model3"  # Either {"model2", "model3"}
+    model_variation = "model2"  # Either {"model2", "model3"}
     resize = (112, 112)  # Make all images the same size
 
     # If data is not already saved, preprocess it and save it to disk
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     if model_variation == "model2":
         # Use the pretrained model from model1 for colour images
         pretrained_model_fp = "./models/model1.h5"  # Path to the pretrained model
-        model = load_model(pretrained_model_fp, custom_objects={"DecayingLRScheduler": DecayingLRSchedule})
+        model = load_model(pretrained_model_fp, custom_objects={"DecayingLRSchedule": DecayingLRSchedule})
     elif model_variation == "model3":  # Start from scratch, optical flow images
         kernel_sizes = (7, 5, 3)
         pool_sizes = (2, 2, 2)

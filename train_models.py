@@ -125,19 +125,20 @@ if __name__ == "__main__":
 
     model_variation = "model1"  # Either {model1, model1_augmented}
     resize = (112, 112)
+    input_shape = (resize[0], resize[1], 3)
 
     # Save the data to disk
     with open(f"./data/{model_variation}_{resize[0]}.pickle", "wb") as f:
         pickle.dump((x_train, y_train, x_val, y_val, x_test, y_test), f)
 
     # Create the model
-    model = make_model(kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, pooling_type=pooling_type,
-                       dense_sizes=dense_sizes, filter_sizes=filter_sizes, normalise=normalise,
-                       dropout_value=dropout_value, conv_act=conv_act)
+    model = make_model(kernel_sizes=kernel_sizes, pool_sizes=pool_sizes, filter_sizes=filter_sizes,
+                       dense_sizes=dense_sizes, pooling_type=pooling_type, dropout_value=dropout_value,
+                       conv_act=conv_act, normalise=normalise, input_shape=input_shape, model_variation=model_variation)
 
     # Prepare the model
-    model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size,
-                          lr_schedule=lr_schedule, opt=opt)
+    model = prepare_model(model, learning_rate=learning_rate, batch_size=batch_size, total_size=total_size, opt=opt,
+                          lr_schedule=lr_schedule)
 
     tensorboard_callback = TensorBoard(log_dir=f"./logs/{model_variation}")
     if model_variation == "model1_augmented":
